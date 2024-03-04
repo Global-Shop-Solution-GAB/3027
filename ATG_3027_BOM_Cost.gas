@@ -1,0 +1,444 @@
+Program.Sub.ScreenSU.Start
+Gui.F_Main..create
+Gui.F_Main..caption("BOM Cost")
+Gui.F_Main..size(12495,7410)
+Gui.F_Main..position(0,0)
+Gui.F_Main..event(Resize,F_Main_resize)
+Gui.F_Main..event(UnLoad,f_main_unload)
+Gui.F_Main..forecolor(0)
+Gui.F_Main..fontstyle(,)
+Gui.F_Main..BackColor(-2147483633)
+Gui.F_Main..maxbutton(False)
+Gui.F_Main..mousepointer(0)
+Gui.F_Main..MinX(0)
+Gui.F_Main..MinY(0)
+Gui.F_Main.gsflexgrid1.create(gsflexgrid)
+Gui.F_Main.gsflexgrid1.size(11955,6195)
+Gui.F_Main.gsflexgrid1.position(195,480)
+Gui.F_Main.cmdPrint.create(button)
+Gui.F_Main.cmdPrint.caption("Print")
+Gui.F_Main.cmdPrint.size(855,375)
+Gui.F_Main.cmdPrint.position(11300,45)
+Gui.F_Main.cmdPrint.event(Click,cmdprint_click)
+Gui.F_Main.cmd.create(button)
+Gui.F_Main.cmd.caption("Browse")
+Gui.F_Main.cmd.size(855,375)
+Gui.F_Main.cmd.position(10345,45)
+Gui.F_Main.cmd.event(Click,cmd_click)
+Gui.F_Main.cmdRecalculate.create(button)
+Gui.F_Main.cmdRecalculate.caption("Calculate")
+Gui.F_Main.cmdRecalculate.size(855,375)
+Gui.F_Main.cmdRecalculate.position(9405,45)
+Gui.F_Main.cmdRecalculate.event(Click,cmdrecalculate_click)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+Variable.Global.iLastRow.Declare(Long)
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+F.Intrinsic.Control.SetErrorHandler("Sub_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.local.shold.Declare(String)
+
+F.Intrinsic.Control.If(V.Passed.009001,=,"004201")
+	F.Intrinsic.UI.Msgbox("Display GAB custom grid instead of BI report?","Grid",4,V.Local.shold)
+	
+	F.Intrinsic.Control.If(V.Local.shold,<>,6)
+			F.Intrinsic.Control.End
+	F.intrinsic.control.endif
+	
+	F.ODBC.Connection!conx.OpenConnection(V.Ambient.PDSN,V.Ambient.Puser,V.Ambient.PPass)
+	'Cancel printing
+	V.Passed.CANCEL.Set(1)
+	
+	'Set up Screen
+	F.Intrinsic.Control.CallSub(BuildStyle)
+	'Show screen
+	Gui.F_Main..show
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Sub_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: ATG_3027_BOM_COST.GAS",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(f_main_unload)
+Function.Intrinsic.Control.EndIf
+Program.Sub.Main.End
+
+Program.Sub.cmdprint_click.Start
+F.Intrinsic.Control.SetErrorHandler("Sub_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+F.Intrinsic.Printer.SelectPrinterDialog
+gui.F_Main.gsflexgrid1.Print("BOM COST",True)
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Sub_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: ATG_3027_BOM_COST.GAS",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(f_main_unload)
+Function.Intrinsic.Control.EndIf
+Program.Sub.cmdprint_click.End
+
+Program.Sub.f_main_unload.Start
+F.Intrinsic.Control.SetErrorHandler("Sub_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+F.ODBC.Connection!conx.Close
+F.Intrinsic.Control.End
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Sub_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: ATG_3027_BOM_COST.GAS",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.End
+Function.Intrinsic.Control.EndIf
+Program.Sub.f_main_unload.End
+
+Program.Sub.cmd_click.Start
+F.Intrinsic.Control.SetErrorHandler("Sub_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.sCol.Declare(String)
+V.Local.sWidth.Declare(String)
+V.Local.sret.Declare(String)
+V.Local.squery.Declare(String)
+V.Local.shold.Declare(String)
+
+F.Intrinsic.String.Split("Parent*!*Description","*!*",V.Local.sCol)
+F.Intrinsic.String.Split("2000*!*2000","*!*",V.Local.swidth)
+
+V.Local.squery.Set("SELECT DISTINCT PARENT_KEY, DESCRIPTION FROM BI_BOM_EXPLODE WHERE REC_TYPE = 'H' ORDER BY PARENT_KEY")
+F.intrinsic.UI.Browser("SELECT PARENT","conx",V.Local.squery,V.Local.sCol,V.Local.sWidth,V.Local.sret)
+
+F.Intrinsic.Control.If(V.Local.sret,<>,"***CANCEL***")
+	F.Intrinsic.string.Split(V.Local.sret,"*!*",V.Local.sRet)
+	F.Intrinsic.Control.CallSub(Populategrid,"parent",V.Local.sret(0))
+F.Intrinsic.Control.endif
+
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Sub_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: ATG_3027_BOM_COST.GAS",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(f_main_unload)
+Function.Intrinsic.Control.EndIf
+Program.Sub.cmd_click.End
+
+Program.Sub.PopulateGrid.Start
+F.Intrinsic.Control.SetErrorHandler("Sub_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+V.Local.sQuery.Declare(String)
+V.Local.iC.Declare(Long)
+V.Local.iC.Set(1)
+V.Local.iR.Declare(Long)
+V.Local.iR.Set(2)
+V.Local.fTotal.Declare(Float)
+V.Local.fqty.Declare(Float)
+V.Local.shold.Declare(String)
+V.Local.faltCost.Declare(Float)
+V.Local.fExt.Declare(Float)
+V.Local.falt.Declare(Float)
+V.Local.fvalue.Declare(Float)
+
+V.Local.sFilePath.Declare(String)
+V.Local.sFileContents.Declare(String)
+V.Local.sParent.Declare(String)
+V.Local.bExists.Declare(Boolean)
+
+Gui.F_Main.gsflexgrid1.Visible(False)
+
+Gui.F_Main.gsflexgrid1.Rows(2)
+F.Intrinsic.Control.If(V.Args.parent,=,"***START***")
+	F.Intrinsic.String.Concat("SELECT PARENT_KEY FROM BI_BOM_EXPLODE WHERE REC_TYPE = 'H' AND TRMNL = '",V.Caller.Terminal,"' ORDER BY SEQUENCE",V.Local.sQuery)
+F.Intrinsic.Control.ElseIf(V.Args.parent,<>,"***START***")
+	F.Intrinsic.String.Concat("SELECT PARENT_KEY FROM BI_BOM_EXPLODE WHERE REC_TYPE = 'H' AND PARENT_KEY = '",V.Args.parent,"' AND TRMNL = '",V.Caller.Terminal,"' ORDER BY SEQUENCE",V.Local.sQuery)
+F.Intrinsic.Control.endif
+
+F.ODBC.Connection!conx.OpenLocalRecordsetRO("rst",V.Local.sQuery)
+
+F.Intrinsic.Control.If(V.ODBC.conx!rst.EOF,<>,True)
+	V.Local.sParent.Set(V.ODBC.conx!rst.FieldValTrim!PARENT_KEY)
+F.Intrinsic.Control.Else
+	F.Intrinsic.UI.Msgbox("Error finding BOM Parent.","Closing Program")
+	F.ODBC.conx!rst.Close
+	F.Intrinsic.Control.CallSub(f_main_unload)
+F.Intrinsic.Control.EndIf
+
+
+'We need to get the Exploded BOM
+F.Intrinsic.String.Build("{0}\BOM{1}.txt",V.Caller.FilesDir,V.Caller.User.Trim,V.Local.sFilePath)
+F.Intrinsic.String.Build("0{0}{1}{0}{2}",V.Ambient.Tab,V.Local.sParent,V.Local.sFilePath,V.Local.sFileContents)
+F.Intrinsic.File.String2File(V.Local.sFilePath,V.Local.sFileContents)
+'Explode BOM Callwrapper
+F.Global.General.CallwrapperSync(410000,V.Local.sFilePath)
+
+'Check to make sure the file is still there
+F.Intrinsic.File.Exists(V.Local.sFilePath,V.Local.bExists)
+
+F.Intrinsic.Control.If(V.Local.bExists,=,True)
+	F.Intrinsic.File.FileToStringArray(V.Local.sFilePath,V.Ambient.Tab,V.Local.sFileContents)
+	v.Local.sFileContents.RedimPreserve(0,3)
+	F.Intrinsic.File.GetFileNameFromFQN(V.Local.sFileContents(3),V.Local.sFilePath)
+	
+F.Intrinsic.Control.Else
+	F.Intrinsic.UI.Msgbox("Exploded BOM file not found.","Closing Program")
+F.Intrinsic.Control.EndIf
+
+
+F.Intrinsic.Control.If(V.odbc.conx!rst.EOF,=,False)
+	F.Intrinsic.String.Concat("SELECT Level, Description, Parent, Unit, Qty, Std_cost, Extnd_cost FROM BI_BOM_EXPLODE WHERE PARENT_KEY = '",V.ODBC.conx!rst.FieldValTrim!PARENT_KEY,"' AND (Rec_Type = 'L' OR Rec_Type = 'H') ORDER BY SEQUENCE",V.Local.sQuery)
+	F.ODBC.Connection!conx.OpenRecordsetRO("rstL",V.Local.sQuery)
+	F.Intrinsic.Control.DoUntil(V.ODBC.conx!rstL.EOF,=,True)
+		Gui.F_Main.gsflexgrid1.TextMatrix(0,V.Local.iC,V.ODBC.conx!rstL.FieldValTrim!Level)
+		Gui.F_Main.gsflexgrid1.TextMatrix(1,V.Local.iC,V.ODBC.conx!rstL.FieldValTrim!Parent)
+		Gui.F_Main.gsflexgrid1.TextMatrix(2,V.Local.iC,V.ODBC.conx!rstL.FieldValTrim!Description)
+		Gui.F_Main.gsflexgrid1.TextMatrix(3,V.Local.iC,V.ODBC.conx!rstL.FieldValTrim!Unit)
+		Gui.F_Main.gsflexgrid1.TextMatrix(4,V.Local.iC,V.ODBC.conx!rstL.FieldValTrim!QTY)
+		Gui.F_Main.gsflexgrid1.TextMatrix(5,V.Local.iC,V.ODBC.conx!rstL.FieldValTrim!STD_COST)
+		Gui.F_Main.gsflexgrid1.TextMatrix(6,V.Local.iC,V.ODBC.conx!rstL.FieldValTrim!EXTND_COST)
+	
+		F.Intrinsic.String.Concat("SELECT AMT_COST, AMT_ALT_COST FROM INVENTORY_MSTR WHERE PART = '",V.ODBC.conx!rstL.FieldVal!parent,"'",V.Local.sQuery)
+		F.ODBC.Connection!conx.OpenRecordsetRO("rstP",V.Local.sQuery)
+		F.Intrinsic.control.If(V.ODBC.conx!rstP.EOF,=,False)
+			'F.Intrinsic.Debug.Stop
+			V.Local.faltCost.Set(0)
+			V.Local.faltCost.Set(V.ODBC.conx!rstP.FieldValFloat!AMT_ALT_COST)
+			'F.Intrinsic.UI.Msgbox(V.Local.faltCost.string)
+			F.Intrinsic.Control.If(V.Local.faltCost,=,0)
+				V.Local.faltCost.Set(V.ODBC.conx!rstP.FieldValFloat!AMT_COST)
+			F.Intrinsic.Control.endif
+	'		F.Intrinsic.Math.Mult(V.ODBC.conx!rstL.FieldVal!QTY,V.Local.faltCost,V.Local.fExt)
+	'		F.Intrinsic.Math.Add(V.Local.faltTotal,V.Local.fExt,V.Local.faltTotal)
+		F.Intrinsic.Control.Else
+			V.Local.faltCost.Set(0)
+		F.Intrinsic.control.endif
+		F.ODBC.conx!rstP.Close
+		Gui.F_Main.gsflexgrid1.TextMatrix(7,V.Local.iC,V.Local.faltCost)
+	'	Gui.F_Main.gsflexgrid1.TextMatrix(8,V.Local.iC,V.local.fExt)
+		Gui.F_Main.gsflexgrid1.ApplyStyle(V.Local.ic,1)
+		F.Intrinsic.Math.Add(V.Local.iC,1,V.Local.iC)
+		
+		F.Intrinsic.Math.Add(V.Local.fTotal,V.ODBC.conx!rstL.FieldValTrim!extnd_cost,V.Local.fTotal)
+		F.Intrinsic.math.Add(V.Local.iR,1,V.Local.iR)
+		Gui.F_Main.gsflexgrid1.Rows(V.local.ir)
+		F.ODBC.conx!rstL.MoveNext
+	F.Intrinsic.Control.Loop
+F.Intrinsic.Control.EndIf
+F.ODBC.conx!rst.Close
+
+'Gui.F_Main.gsflexgrid1.applystyle(V.Local.iR.--,3)
+
+F.Intrinsic.Math.Add(V.local.iR,1,V.global.iLastRow)
+
+Gui.F_Main.gsflexgrid1.Rows(V.global.iLastRow)
+Gui.F_Main.gsflexgrid1.TextMatrix(5,V.local.iR,"Total")
+Gui.F_Main.gsflexgrid1.TextMatrix(7,V.local.iR,"Current Total")
+Gui.F_Main.gsflexgrid1.TextMatrix(6,V.local.ir,V.Local.fTotal)
+V.Global.iLastRow.Set(V.Local.iR)
+'F.Intrinsic.Debug.Stop
+V.Local.fTotal.Set(0)
+F.Intrinsic.Math.Sub(V.Global.iLastRow,2,V.Local.iR)
+F.Intrinsic.Control.For(V.Local.iC,1,V.Local.iR,1)
+	Gui.F_Main.gsflexgrid1.GetTextMatrix(7,V.Local.iC,V.Local.falt)
+	Gui.F_Main.gsflexgrid1.GetTextMatrix(4,V.Local.iC,V.Local.fQty)
+	F.Intrinsic.Math.Mult(V.Local.fqty,V.Local.falt,V.Local.fext)
+	F.Intrinsic.String.Format(V.Local.fext,"0.0000",V.Local.shold)
+	Gui.F_Main.gsflexgrid1.TextMatrix(8,V.Local.iC,V.Local.shold)
+	F.Intrinsic.Math.Add(V.Local.fext,V.Local.ftotal,V.Local.ftotal)
+F.Intrinsic.Control.Next(V.Local.iC)
+F.Intrinsic.String.Format(V.Local.fTotal,"0.0000",V.Local.shold)
+
+Gui.F_Main.gsflexgrid1.TextMatrix(8,V.Global.iLastRow,V.Local.shold)
+Gui.F_Main.gsflexgrid1.ApplyStyle(V.global.iLastRow,2)
+Gui.F_Main.gsflexgrid1.FixedRows(1)
+Gui.F_Main.gsflexgrid1.Visible(True)
+	
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Sub_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: ATG_3027_BOM_COST.GAS",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(f_main_unload)
+Function.Intrinsic.Control.EndIf
+Program.Sub.PopulateGrid.End
+
+Program.Sub.f_main_resize.Start
+F.Intrinsic.Control.SetErrorHandler("Sub_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.local.width.declare(Long)
+V.local.height.declare(Long)
+V.local.x.declare(Long)
+V.local.Y.declare(Long)
+
+Gui.F_Main..Size(12495,Variable.Screen.F_Main.Height)
+Function.Intrinsic.Control.If(Variable.Screen.F_Main.height,<,7410)
+	Gui.F_Main..Size(Variable.Screen.F_Main.Width,7410)
+Function.Intrinsic.Control.EndIf
+Function.Intrinsic.Math.mult(Variable.Screen.F_Main.Height,0.836,Variable.Local.height)
+Gui.F_Main.gsflexgrid1.Size(V.Screen.F_Main!gsflexgrid1.Width,V.Local.height)
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Sub_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: ATG_3027_BOM_COST.GAS",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(f_main_unload)
+Function.Intrinsic.Control.EndIf
+Program.Sub.f_main_resize.End
+
+Program.Sub.cmdrecalculate_click.Start
+F.Intrinsic.Control.SetErrorHandler("Sub_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+V.Local.iR.Declare(Long)
+V.Local.iC.Declare(Long)
+V.Local.fValue.Declare(Float)
+V.Local.fqty.Declare(Float)
+V.Local.fext.Declare(Float)
+V.Local.ftotal.Declare(Float)
+V.Local.shold.Declare(String)
+
+Gui.F_Main.gsflexgrid1.Commit
+Gui.F_Main.cmdPrint.Enabled(false)
+Gui.F_Main.cmd.Enabled(false)
+Gui.F_Main.cmdRecalculate.Enabled(false)
+
+'F.Intrinsic.API.LockWindowUpdate(V.Screen.F_Main!gsflexgrid1.HWnd)
+Gui.F_Main.gsflexgrid1.Visible(False)
+F.Intrinsic.Math.Sub(V.Global.iLastRow,2,V.Local.iR)
+F.Intrinsic.Control.For(V.Local.iC,1,V.Local.iR,1)
+	Gui.F_Main.gsflexgrid1.GetTextMatrix(7,V.Local.iC,V.Local.fValue)
+	Gui.F_Main.gsflexgrid1.GetTextMatrix(4,V.Local.iC,V.Local.fQty)
+	F.Intrinsic.Math.Mult(V.Local.fqty,V.Local.fValue,V.Local.fext)
+	F.Intrinsic.String.Format(V.Local.fext,"0.0000",V.Local.shold)
+	Gui.F_Main.gsflexgrid1.TextMatrix(8,V.Local.iC,V.Local.shold)
+	F.Intrinsic.Math.Add(V.Local.fext,V.Local.ftotal,V.Local.ftotal)
+F.Intrinsic.Control.Next(V.Local.iC)
+
+F.Intrinsic.String.Format(V.Local.fTotal,"0.0000",V.Local.shold)
+Gui.F_Main.gsflexgrid1.TextMatrix(8,V.Global.iLastRow,V.Local.shold)
+Gui.F_Main.gsflexgrid1.ApplyStyle(V.Global.iLastRow,2)
+Gui.F_Main.gsflexgrid1.FixedRows(1)
+
+Gui.F_Main.cmdPrint.Enabled(true)
+Gui.F_Main.cmd.Enabled(true)
+Gui.F_Main.cmdRecalculate.Enabled(true)
+GUi.F_Main.gsflexgrid1.Visible(True)
+'F.Intrinsic.API.unLockWindowUpdate
+
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Sub_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: ATG_3027_BOM_COST.GAS",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(f_main_unload)
+Function.Intrinsic.Control.EndIf
+Program.Sub.cmdrecalculate_click.End
+
+Program.Sub.BuildStyle.Start
+F.Intrinsic.Control.SetErrorHandler("Sub_Err")
+F.Intrinsic.Control.ClearErrors
+
+V.Local.sError.Declare(String)
+
+'Initialize buildstyle
+Gui.F_Main.gsflexgrid1.Cols(9)
+Gui.F_Main.gsflexgrid1.Rows(2)
+
+Gui.F_Main.gsflexgrid1.BuildStyle(1,0,"type","locked","")
+Gui.F_Main.gsflexgrid1.BuildStyle(1,1,"type","locked","")
+Gui.F_Main.gsflexgrid1.BuildStyle(1,2,"type","locked","")
+Gui.F_Main.gsflexgrid1.BuildStyle(1,3,"type","locked","")
+Gui.F_Main.gsflexgrid1.BuildStyle(1,4,"type","locked","")
+Gui.F_Main.gsflexgrid1.BuildStyle(1,5,"type","locked","")
+Gui.F_Main.gsflexgrid1.BuildStyle(1,6,"type","locked","")
+Gui.F_Main.gsflexgrid1.BuildStyle(1,8,"type","locked","")
+
+Gui.F_Main.gsflexgrid1.TextMatrix(0,0,"Level")
+Gui.F_Main.gsflexgrid1.TextMatrix(1,0,"Part")
+Gui.F_Main.gsflexgrid1.TextMatrix(2,0,"Description")
+Gui.F_Main.gsflexgrid1.TextMatrix(3,0,"UM")
+Gui.F_Main.gsflexgrid1.TextMatrix(4,0,"Qty")
+Gui.F_Main.gsflexgrid1.TextMatrix(5,0,"Cost")
+Gui.F_Main.gsflexgrid1.TextMatrix(6,0,"Ext")
+Gui.F_Main.gsflexgrid1.TextMatrix(7,0,"Current Cost")
+Gui.F_Main.gsflexgrid1.TextMatrix(8,0,"Current Total")
+
+Gui.F_Main.gsflexgrid1.BuildStyle(1,0,"format","alignment",6)
+Gui.F_Main.gsflexgrid1.BuildStyle(1,1,"format","alignment",2)
+Gui.F_Main.gsflexgrid1.BuildStyle(1,2,"format","alignment",2)
+Gui.F_Main.gsflexgrid1.BuildStyle(1,3,"format","alignment",2)
+Gui.F_Main.gsflexgrid1.BuildStyle(1,4,"format","alignment",2)
+Gui.F_Main.gsflexgrid1.BuildStyle(1,5,"format","mask","0.0000")
+Gui.F_Main.gsflexgrid1.BuildStyle(1,6,"format","mask","0.0000")
+Gui.F_Main.gsflexgrid1.BuildStyle(1,7,"format","mask","0.0000")
+Gui.F_Main.gsflexgrid1.BuildStyle(1,8,"format","mask","0.0000")
+
+Gui.F_Main.gsflexgrid1.ColWidth(2,2300)
+Gui.F_Main.gsflexgrid1.Colwidth(1,1500)
+Gui.F_Main.gsflexgrid1.Colwidth(4,1100)
+Gui.F_Main.gsflexgrid1.Colwidth(5,1100)
+Gui.F_Main.gsflexgrid1.Colwidth(6,1100)
+
+Gui.F_Main.gsflexgrid1.FixedRows(1)
+
+Gui.F_Main.gsflexgrid1.BuildStyle(2,0,"type","locked","")
+Gui.F_Main.gsflexgrid1.BuildStyle(2,1,"type","locked","")
+Gui.F_Main.gsflexgrid1.BuildStyle(2,2,"type","locked","")
+Gui.F_Main.gsflexgrid1.BuildStyle(2,3,"type","locked","")
+Gui.F_Main.gsflexgrid1.BuildStyle(2,4,"type","locked","")
+Gui.F_Main.gsflexgrid1.BuildStyle(2,5,"type","locked","")
+Gui.F_Main.gsflexgrid1.BuildStyle(2,6,"type","locked","")
+Gui.F_Main.gsflexgrid1.BuildStyle(2,7,"type","locked","")
+Gui.F_Main.gsflexgrid1.BuildStyle(2,8,"type","locked","")
+Gui.F_Main.gsflexgrid1.BuildStyle(2,6,"format","mask","0.0000")
+Gui.F_Main.gsflexgrid1.BuildStyle(2,8,"format","mask","0.0000")
+
+Gui.F_Main.gsflexgrid1.BuildStyle(3,0,"type","locked","")
+Gui.F_Main.gsflexgrid1.BuildStyle(3,1,"type","locked","")
+Gui.F_Main.gsflexgrid1.BuildStyle(3,2,"type","locked","")
+Gui.F_Main.gsflexgrid1.BuildStyle(3,3,"type","locked","")
+Gui.F_Main.gsflexgrid1.BuildStyle(3,4,"type","locked","")
+Gui.F_Main.gsflexgrid1.BuildStyle(3,5,"type","locked","")
+Gui.F_Main.gsflexgrid1.BuildStyle(3,6,"type","locked","")
+Gui.F_Main.gsflexgrid1.BuildStyle(3,7,"type","locked","")
+Gui.F_Main.gsflexgrid1.BuildStyle(3,8,"type","locked","")
+
+F.Intrinsic.Control.CallSub(Populategrid,"parent","***START***")
+
+F.Intrinsic.Control.ExitSub
+
+F.Intrinsic.Control.Label("Sub_Err")
+F.Intrinsic.Control.If(V.Ambient.ErrorNumber,<>,0)
+	Function.Intrinsic.String.Concat("Project: ATG_3027_BOM_COST.GAS",V.Ambient.Newline,V.Ambient.Newline,"Subroutine: ",V.Ambient.CurrentSubroutine,V.Ambient.NewLine,"Error Occurred ",V.Ambient.ErrorNumber," with description ",V.Ambient.ErrorDescription,V.Local.sError)
+	F.Intrinsic.UI.Msgbox(V.Local.sError)
+	F.Intrinsic.Control.CallSub(f_main_unload)
+Function.Intrinsic.Control.EndIf
+Program.Sub.BuildStyle.End
